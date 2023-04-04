@@ -1,8 +1,10 @@
-const labels = require('github-labels');
+const { Octokit } = require('@octokit/rest');
 const fs = require('fs');
 
+require('dotenv').config();
+
 const token = process.env.GITHUB_TOKEN;
-const repo = process.env.REPOSITORY;
+const [owner, repo] = (process.env.REPOSITORY || '').split('/');
 const filePath = 'labels.json';
 
 if (!token) {
@@ -10,37 +12,57 @@ if (!token) {
   process.exit(1);
 }
 
-const options = {
-  token,
-  repo,
-};
+const octokit = new Octokit({
+  auth: token,
+});
 
-function exportLabels() {
-  labels.get(options, (err, result) => {
-    if (err) {
-      console.error('Error exporting labels:', err);
-      return;
-    }
+async function exportLabels() {
+  try {
+    const { data: labels } = await octokit.rest.issues.listLabelsForRepo({
+      owner,
+      repo,
+    });
 
-    fs.writeFileSync(filePath, JSON.stringify(result, null, 2));
+    fs.writeFileSync(filePath, JSON.stringify(labels, null, 2));
     console.log(`Labels exported to ${filePath}`);
-  });
+  } catch (err) {
+    console.error('Error exporting labels:', err);
+  }
 }
 
-function importLabels() {
-  const labelsData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+async function importLabels() {
+  try {
+    const labelsData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
-  options.labels = labelsData;
-  options.force = true;
-
-  labels.set(options, (err) => {
-    if (err) {
-      console.error('Error importing labels:', err);
-      return;
+    for (const label of labelsData) {
+      try {
+        await octokit.rest.issues.updateLabel({
+          owner,
+          repo,
+          current_name: label.name,
+          name: label.name,
+          color: label.color,
+          description: label.description,
+        });
+      } catch (err) {
+        if (err.status === 404) {
+          await octokit.rest.issues.createLabel({
+            owner,
+            repo,
+            name: label.name,
+            color: label.color,
+            description: label.description,
+          });
+        } else {
+          throw err;
+        }
+      }
     }
 
     console.log(`Labels imported from ${filePath}`);
-  });
+  } catch (err) {
+    console.error('Error importing labels:', err);
+  }
 }
 
 if (process.argv[2] === 'export') {

@@ -1,0 +1,23 @@
+{
+  "name": "copy-github-label",
+  "version": "1.0.0",
+  "description": "このツールは、GitHubリポジトリのラベルをエクスポートおよびインポートするためのスクリプトです。`github-labels` npmパッケージを使用して実装されています。",
+  "main": "labels.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/damono999/copy-github-label.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/damono999/copy-github-label/issues"
+  },
+  "homepage": "https://github.com/damono999/copy-github-label#readme",
+  "dependencies": {
+    "@octokit/rest": "^19.0.7",
+    "dotenv": "^16.0.3"
+  }
+}
